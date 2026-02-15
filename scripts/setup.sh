@@ -3,7 +3,9 @@
 set -e
 
 function dokku() {
-    ssh -o "StrictHostKeyChecking=no" dokku@"${DOKKU_HOST}" dokku "$@"
+    # Redirect stdin to /dev/null to prevent ssh from consuming input
+    # when called inside a `while read` loop
+    ssh -o "StrictHostKeyChecking=no" dokku@"${DOKKU_HOST}" dokku "$@" < /dev/null
 }
 
 function info() {
@@ -68,11 +70,12 @@ if [ -n "$INPUT_STORAGE_MOUNTS" ]; then
         [ -z "$line" ] && continue
         # Replace {STORAGE_DIR} token with actual path
         mount="${line//\{STORAGE_DIR\}/$STORAGE_DIR}"
-        container_path="${mount#*:}"
-
-        if ! dokku storage:list "$DOKKU_APP" | grep -q "$container_path"; then
+        
+        if ! dokku storage:list "$DOKKU_APP" | grep -q "$mount"; then
             info "Mounting storage: $mount"
             dokku storage:mount "$DOKKU_APP" "$mount"
+        else
+            info "Storage already mounted: $mount"
         fi
     done <<< "$INPUT_STORAGE_MOUNTS"
 fi
