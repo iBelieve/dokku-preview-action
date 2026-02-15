@@ -1,0 +1,129 @@
+name: "Dokku Preview Deploy"
+description: "Deploy or destroy a Dokku preview app for a pull request"
+
+inputs:
+  action:
+    description: "Action to perform: deploy or destroy"
+    required: true
+
+  dokku-host:
+    description: "Hostname of the Dokku server (SSH target)"
+    required: true
+
+  app-name-prefix:
+    description: "Prefix for the Dokku app name (app becomes <prefix>-pr-<number>)"
+    required: true
+
+  base-domain:
+    description: "Base domain for preview URLs (domain becomes <app-name>.<base-domain>)"
+    required: true
+
+  env-vars:
+    description: "Newline-separated KEY=VALUE pairs for dokku config:set --no-restart"
+    required: false
+    default: ""
+
+  ports:
+    description: "Port mapping for dokku ports:set (e.g. http:80:80)"
+    required: false
+    default: "http:80:80"
+
+  storage-mounts:
+    description: >
+      Newline-separated HOST_PATH:CONTAINER_PATH pairs.
+      Use {STORAGE_DIR} to reference /var/lib/dokku/data/storage/<app-name>.
+    required: false
+    default: "{STORAGE_DIR}:/app/storage"
+
+  release-command:
+    description: >
+      Override the release command in Procfile before pushing.
+      Leave empty to skip Procfile modification.
+    required: false
+    default: ""
+
+  url-scheme:
+    description: "URL scheme for the preview comment (http or https)"
+    required: false
+    default: "http"
+
+outputs:
+  preview-url:
+    description: "The full preview URL (only set on deploy)"
+    value: ${{ steps.set-url.outputs.url }}
+
+  app-name:
+    description: "The computed Dokku app name"
+    value: ${{ steps.compute-names.outputs.app-name }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute app name and domain
+      id: compute-names
+      shell: bash
+      run: |
+        APP_NAME="${{ inputs.app-name-prefix }}-pr-${{ github.event.pull_request.number }}"
+        APP_DOMAIN="${APP_NAME}.${{ inputs.base-domain }}"
+        echo "app-name=${APP_NAME}" >> "$GITHUB_OUTPUT"
+        echo "app-domain=${APP_DOMAIN}" >> "$GITHUB_OUTPUT"
+
+    # ---- DEPLOY steps ----
+
+    - name: Set up Git user
+      if: inputs.action == 'deploy'
+      uses: fregante/setup-git-user@v2
+
+    - name: Set up Dokku preview environment
+      if: inputs.action == 'deploy'
+      shell: bash
+      run: ${{ github.action_path }}/scripts/setup.sh
+      env:
+        DOKKU_HOST: ${{ inputs.dokku-host }}
+        DOKKU_APP: ${{ steps.compute-names.outputs.app-name }}
+        DOKKU_APP_DOMAIN: ${{ steps.compute-names.outputs.app-domain }}
+        INPUT_ENV_VARS: ${{ inputs.env-vars }}
+        INPUT_PORTS: ${{ inputs.ports }}
+        INPUT_STORAGE_MOUNTS: ${{ inputs.storage-mounts }}
+
+    - name: Update Procfile release command
+      if: inputs.action == 'deploy' && inputs.release-command != ''
+      shell: bash
+      run: |
+        sed -i "s|^release: .*|release: ${RELEASE_COMMAND}|" Procfile
+
+        if ! git diff --quiet -- Procfile; then
+          git add Procfile
+          git commit -m "Update release command for preview deploy"
+        fi
+      env:
+        RELEASE_COMMAND: ${{ inputs.release-command }}
+
+    - name: Push to Dokku
+      if: inputs.action == 'deploy'
+      shell: bash
+      run: git push dokku HEAD:refs/heads/master --force
+
+    - name: Set preview URL output
+      if: inputs.action == 'deploy'
+      id: set-url
+      shell: bash
+      run: echo "url=${{ inputs.url-scheme }}://${{ steps.compute-names.outputs.app-domain }}" >> "$GITHUB_OUTPUT"
+
+    - name: Comment preview URL on PR
+      if: inputs.action == 'deploy'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fn = require('${{ github.action_path }}/scripts/comment.cjs');
+          await fn({github, context, core, previewUrl: '${{ steps.set-url.outputs.url }}'});
+
+    # ---- DESTROY steps ----
+
+    - name: Destroy Dokku preview app
+      if: inputs.action == 'destroy'
+      shell: bash
+      run: ${{ github.action_path }}/scripts/destroy.sh
+      env:
+        DOKKU_HOST: ${{ inputs.dokku-host }}
+        DOKKU_APP: ${{ steps.compute-names.outputs.app-name }}
