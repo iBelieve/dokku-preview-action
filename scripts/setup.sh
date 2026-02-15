@@ -62,7 +62,7 @@ dokku ports:set "$DOKKU_APP" "$INPUT_PORTS"
 info "Ensuring storage directory exists"
 dokku storage:ensure-directory "$DOKKU_APP" --chown root "$DOKKU_APP"
 
-# Mount storage volumes
+# Mount read/write storage volumes
 if [ -n "$INPUT_STORAGE_MOUNTS" ]; then
     while IFS= read -r line; do
         [ -z "$line" ] && continue
@@ -75,6 +75,22 @@ if [ -n "$INPUT_STORAGE_MOUNTS" ]; then
             dokku storage:mount "$DOKKU_APP" "$mount"
         fi
     done <<< "$INPUT_STORAGE_MOUNTS"
+fi
+
+# Mount read-only storage volumes
+if [ -n "$INPUT_READONLY_STORAGE_MOUNTS" ]; then
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        # Replace {STORAGE_DIR} token with actual path
+        mount="${line//\{STORAGE_DIR\}/$STORAGE_DIR}"
+        readonly_mount="${mount}:ro"
+        container_path="${mount#*:}"
+
+        if ! dokku storage:list "$DOKKU_APP" | grep -q "$container_path"; then
+            info "Mounting read-only storage: $readonly_mount"
+            dokku storage:mount "$DOKKU_APP" "$readonly_mount"
+        fi
+    done <<< "$INPUT_READONLY_STORAGE_MOUNTS"
 fi
 
 info "Setting up Git remote for Dokku"

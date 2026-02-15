@@ -30,10 +30,17 @@ inputs:
 
   storage-mounts:
     description: >
-      Newline-separated HOST_PATH:CONTAINER_PATH pairs.
+      Newline-separated HOST_PATH:CONTAINER_PATH pairs for read/write mounts.
       Use {STORAGE_DIR} to reference /var/lib/dokku/data/storage/<app-name>.
     required: false
     default: "{STORAGE_DIR}:/app/storage"
+
+  readonly-storage-mounts:
+    description: >
+      Newline-separated HOST_PATH:CONTAINER_PATH pairs for read-only mounts.
+      Use {STORAGE_DIR} to reference /var/lib/dokku/data/storage/<app-name>.
+    required: false
+    default: ""
 
   release-command:
     description: >
@@ -85,6 +92,7 @@ runs:
         INPUT_ENV_VARS: ${{ inputs.env-vars }}
         INPUT_PORTS: ${{ inputs.ports }}
         INPUT_STORAGE_MOUNTS: ${{ inputs.storage-mounts }}
+        INPUT_READONLY_STORAGE_MOUNTS: ${{ inputs.readonly-storage-mounts }}
 
     - name: Update Procfile release command
       if: inputs.action == 'deploy' && inputs.release-command != ''
