@@ -90,7 +90,12 @@ runs:
       if: inputs.action == 'deploy' && inputs.release-command != ''
       shell: bash
       run: |
-        sed -i "s|^release: .*|release: ${RELEASE_COMMAND}|" Procfile
+        # Escape characters that are special in sed replacement strings:
+        #   \ (escape char), & (matched text), | (our delimiter)
+        ESCAPED_CMD="${RELEASE_COMMAND//\\/\\\\}"
+        ESCAPED_CMD="${ESCAPED_CMD//&/\\&}"
+        ESCAPED_CMD="${ESCAPED_CMD//|/\\|}"
+        sed -i "s|^release: .*|release: ${ESCAPED_CMD}|" Procfile
 
         if ! git diff --quiet -- Procfile; then
           git add Procfile
