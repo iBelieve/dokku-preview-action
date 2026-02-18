@@ -44,7 +44,7 @@ inputs:
 
   nginx-properties:
     description: >
-      Newline-separated PROPERTY=VALUE pairs for dokku nginx:set.
+      Newline-separated PROPERTY VALUE pairs for dokku nginx:set.
       After all properties are applied, dokku proxy:build-config is called
       to rebuild the nginx configuration.
     required: false

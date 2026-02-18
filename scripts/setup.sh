@@ -63,9 +63,9 @@ if [ -n "$INPUT_NGINX_PROPERTIES" ]; then
     info "Setting additional nginx properties"
     while IFS= read -r line; do
         [ -z "$line" ] && continue
-        property="${line%%=*}"
-        value="${line#*=}"
-        info "  nginx:set $property=$value"
+        property="${line%% *}"
+        value="${line#* }"
+        info "  nginx:set $property $value"
         dokku nginx:set "$DOKKU_APP" "$property" "$value"
     done <<< "$INPUT_NGINX_PROPERTIES"
 fi
