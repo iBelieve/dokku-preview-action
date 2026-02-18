@@ -42,6 +42,14 @@ inputs:
     required: false
     default: ""
 
+  nginx-properties:
+    description: >
+      Newline-separated PROPERTY VALUE pairs for dokku nginx:set.
+      After all properties are applied, dokku proxy:build-config is called
+      to rebuild the nginx configuration.
+    required: false
+    default: ""
+
   url-scheme:
     description: "URL scheme for the preview comment (http or https)"
     required: false
@@ -85,6 +93,7 @@ runs:
         INPUT_ENV_VARS: ${{ inputs.env-vars }}
         INPUT_PORTS: ${{ inputs.ports }}
         INPUT_STORAGE_MOUNTS: ${{ inputs.storage-mounts }}
+        INPUT_NGINX_PROPERTIES: ${{ inputs.nginx-properties }}
 
     - name: Update Procfile release command
       if: inputs.action == 'deploy' && inputs.release-command != ''

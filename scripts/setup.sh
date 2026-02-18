@@ -58,6 +58,21 @@ dokku nginx:set "$DOKKU_APP" x-forwarded-for-value '$http_x_forwarded_for'
 dokku nginx:set "$DOKKU_APP" x-forwarded-port-value '$http_x_forwarded_port'
 dokku nginx:set "$DOKKU_APP" x-forwarded-proto-value '$http_x_forwarded_proto'
 
+# Additional nginx properties from input
+if [ -n "$INPUT_NGINX_PROPERTIES" ]; then
+    info "Setting additional nginx properties"
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        property="${line%% *}"
+        value="${line#* }"
+        info "  nginx:set $property $value"
+        dokku nginx:set "$DOKKU_APP" "$property" "$value"
+    done <<< "$INPUT_NGINX_PROPERTIES"
+fi
+
+info "Rebuilding proxy configuration"
+dokku proxy:build-config "$DOKKU_APP"
+
 info "Setting up proxy ports"
 dokku ports:set "$DOKKU_APP" "$INPUT_PORTS"
 
