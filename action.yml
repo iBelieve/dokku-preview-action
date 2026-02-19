@@ -50,6 +50,14 @@ inputs:
     required: false
     default: ""
 
+  process-scaling:
+    description: >
+      Newline-separated PROCESS=COUNT pairs for dokku ps:scale
+      (e.g. worker=1). Applied before deploy so scaling takes effect
+      on the first push.
+    required: false
+    default: ""
+
   url-scheme:
     description: "URL scheme for the preview comment (http or https)"
     required: false
@@ -94,6 +102,7 @@ runs:
         INPUT_PORTS: ${{ inputs.ports }}
         INPUT_STORAGE_MOUNTS: ${{ inputs.storage-mounts }}
         INPUT_NGINX_PROPERTIES: ${{ inputs.nginx-properties }}
+        INPUT_PROCESS_SCALING: ${{ inputs.process-scaling }}
 
     - name: Update Procfile release command
       if: inputs.action == 'deploy' && inputs.release-command != ''
