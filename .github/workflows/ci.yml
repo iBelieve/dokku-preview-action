@@ -27,3 +27,4 @@ jobs:
         uses: mpalmer/action-validator@main
         with:
           file: action.yml
+          version: 0.8.0
