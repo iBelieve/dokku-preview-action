@@ -96,20 +96,6 @@ if [ -n "$INPUT_STORAGE_MOUNTS" ]; then
     done <<< "$INPUT_STORAGE_MOUNTS"
 fi
 
-# Scale processes (e.g. worker=1)
-if [ -n "$INPUT_PROCESS_SCALING" ]; then
-    info "Scaling processes"
-    scale_args=""
-    while IFS= read -r line; do
-        [ -z "$line" ] && continue
-        scale_args="$scale_args $line"
-    done <<< "$INPUT_PROCESS_SCALING"
-    if [ -n "$scale_args" ]; then
-        # shellcheck disable=SC2086 # intentional word splitting
-        dokku ps:scale "$DOKKU_APP" $scale_args
-    fi
-fi
-
 info "Setting up Git remote for Dokku"
 git remote add dokku dokku@"${DOKKU_HOST}":"$DOKKU_APP"
 

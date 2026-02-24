@@ -62,8 +62,8 @@ inputs:
   process-scaling:
     description: >
       Newline-separated PROCESS=COUNT pairs for dokku ps:scale
-      (e.g. worker=1). Applied before deploy so scaling takes effect
-      on the first push.
+      (e.g. worker=1). Applied after deploy so new process types
+      from the Procfile are available for scaling.
     required: false
     default: ""
 
@@ -111,7 +111,6 @@ runs:
         INPUT_PORTS: ${{ inputs.ports }}
         INPUT_STORAGE_MOUNTS: ${{ inputs.storage-mounts }}
         INPUT_NGINX_PROPERTIES: ${{ inputs.nginx-properties }}
-        INPUT_PROCESS_SCALING: ${{ inputs.process-scaling }}
 
     - name: Update Procfile release command
       if: inputs.action == 'deploy' && inputs.release-command != ''
@@ -169,6 +168,15 @@ runs:
       if: inputs.action == 'deploy'
       shell: bash
       run: git push dokku HEAD:refs/heads/master --force
+
+    - name: Post-deploy configuration
+      if: inputs.action == 'deploy'
+      shell: bash
+      run: ${{ github.action_path }}/scripts/post-deploy.sh
+      env:
+        DOKKU_HOST: ${{ inputs.dokku-host }}
+        DOKKU_APP: ${{ steps.compute-names.outputs.app-name }}
+        INPUT_PROCESS_SCALING: ${{ inputs.process-scaling }}
 
     - name: Set preview URL output
       if: inputs.action == 'deploy'
