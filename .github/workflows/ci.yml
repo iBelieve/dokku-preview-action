@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: scripts
+          severity: warning
+
+      - name: Validate JavaScript syntax
+        run: node --check scripts/comment.cjs
+
+      - name: Validate action.yml
+        uses: mpalmer/action-validator@main
+        with:
+          file: action.yml
+          version: 0.8.0
