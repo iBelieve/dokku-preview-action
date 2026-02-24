@@ -24,6 +24,6 @@ jobs:
         run: node --check scripts/comment.cjs
 
       - name: Validate action.yml
-        uses: mpalmer/action-validator@v2
+        uses: mpalmer/action-validator@main
         with:
           file: action.yml
