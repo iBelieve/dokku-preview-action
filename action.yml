@@ -169,19 +169,10 @@ runs:
       shell: bash
       run: git push dokku HEAD:refs/heads/master --force
 
-    - name: Scale processes
-      if: inputs.action == 'deploy' && inputs.process-scaling != ''
+    - name: Post-deploy configuration
+      if: inputs.action == 'deploy'
       shell: bash
-      run: |
-        scale_args=""
-        while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            scale_args="$scale_args $line"
-        done <<< "$INPUT_PROCESS_SCALING"
-        if [ -n "$scale_args" ]; then
-            echo -e "\033[1;34mScaling processes\033[0m"
-            ssh -o "StrictHostKeyChecking=no" dokku@"${DOKKU_HOST}" dokku ps:scale "$DOKKU_APP" $scale_args
-        fi
+      run: ${{ github.action_path }}/scripts/post-deploy.sh
       env:
         DOKKU_HOST: ${{ inputs.dokku-host }}
         DOKKU_APP: ${{ steps.compute-names.outputs.app-name }}
