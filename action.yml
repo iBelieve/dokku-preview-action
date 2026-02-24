@@ -42,6 +42,15 @@ inputs:
     required: false
     default: ""
 
+  release-script:
+    description: >
+      Script body to inject into the release file referenced by the Procfile.
+      The existing release command in the Procfile must be a path to a file.
+      The file contents are replaced with this script, preserving the original
+      hashbang line. Mutually exclusive with release-command.
+    required: false
+    default: ""
+
   nginx-properties:
     description: >
       Newline-separated PROPERTY VALUE pairs for dokku nginx:set.
@@ -121,6 +130,40 @@ runs:
         fi
       env:
         RELEASE_COMMAND: ${{ inputs.release-command }}
+
+    - name: Inject release script into release file
+      if: inputs.action == 'deploy' && inputs.release-script != ''
+      shell: bash
+      run: |
+        # Extract the release command from the Procfile
+        RELEASE_LINE=$(grep '^release:' Procfile) || {
+          echo "::error::Procfile has no release command. Cannot inject release-script."
+          exit 1
+        }
+        RELEASE_FILE="${RELEASE_LINE#release: }"
+
+        # Ensure the release command is a path to an existing file
+        if [[ ! -f "$RELEASE_FILE" ]]; then
+          echo "::error::Release command '$RELEASE_FILE' is not a path to an existing file."
+          exit 1
+        fi
+
+        # Read the original hashbang line
+        HASHBANG=$(head -n 1 "$RELEASE_FILE")
+        if [[ "$HASHBANG" != \#!* ]]; then
+          echo "::error::Release file '$RELEASE_FILE' does not start with a hashbang line."
+          exit 1
+        fi
+
+        # Write the new file: original hashbang + user-provided script
+        printf '%s\n%s\n' "$HASHBANG" "$RELEASE_SCRIPT" > "$RELEASE_FILE"
+
+        if ! git diff --quiet -- "$RELEASE_FILE"; then
+          git add "$RELEASE_FILE"
+          git commit -m "Inject release script for preview deploy"
+        fi
+      env:
+        RELEASE_SCRIPT: ${{ inputs.release-script }}
 
     - name: Push to Dokku
       if: inputs.action == 'deploy'
