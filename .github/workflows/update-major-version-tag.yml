@@ -27,6 +27,9 @@ jobs:
             exit 1
           fi
 
+      - name: Set up Git user
+        uses: fregante/setup-git-user@v2
+
       - name: Force-update major version tag
         env:
           MAJOR_VERSION: ${{ github.event.inputs.major-version }}
