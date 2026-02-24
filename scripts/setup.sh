@@ -43,7 +43,7 @@ if [ -n "$INPUT_ENV_VARS" ]; then
         env_args="$env_args $line"
     done <<< "$INPUT_ENV_VARS"
     if [ -n "$env_args" ]; then
-        # shellcheck disable=SC2086 -- intentional word splitting
+        # shellcheck disable=SC2086
         dokku config:set "$DOKKU_APP" $env_args --no-restart
     fi
 fi
@@ -105,7 +105,7 @@ if [ -n "$INPUT_PROCESS_SCALING" ]; then
         scale_args="$scale_args $line"
     done <<< "$INPUT_PROCESS_SCALING"
     if [ -n "$scale_args" ]; then
-        # shellcheck disable=SC2086 -- intentional word splitting
+        # shellcheck disable=SC2086
         dokku ps:scale "$DOKKU_APP" $scale_args
     fi
 fi
