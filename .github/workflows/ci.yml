@@ -23,7 +23,7 @@ jobs:
       - name: Validate JavaScript syntax
         run: node --check scripts/comment.cjs
 
-      - name: Lint YAML
-        uses: ibiqlik/action-yamllint@v3
+      - name: Validate action.yml
+        uses: mpalmer/action-validator@v2
         with:
-          file_or_dir: action.yml
+          file: action.yml
