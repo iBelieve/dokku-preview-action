@@ -96,6 +96,18 @@ if [ -n "$INPUT_STORAGE_MOUNTS" ]; then
     done <<< "$INPUT_STORAGE_MOUNTS"
 fi
 
+# Docker options from input
+if [ -n "$INPUT_DOCKER_OPTIONS" ]; then
+    info "Configuring docker options"
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        phases="${line%% *}"
+        option="${line#* }"
+        info "  docker-options:add $phases $option"
+        dokku docker-options:add "$DOKKU_APP" "$phases" "$option" 2>/dev/null || true
+    done <<< "$INPUT_DOCKER_OPTIONS"
+fi
+
 info "Setting up Git remote for Dokku"
 git remote add dokku dokku@"${DOKKU_HOST}":"$DOKKU_APP"
 

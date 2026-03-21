@@ -59,6 +59,14 @@ inputs:
     required: false
     default: ""
 
+  docker-options:
+    description: >
+      Newline-separated PHASES OPTION pairs for dokku docker-options:add.
+      PHASES is a comma-separated list (deploy, run, build).
+      Example: "deploy,run --privileged"
+    required: false
+    default: ""
+
   process-scaling:
     description: >
       Newline-separated PROCESS=COUNT pairs for dokku ps:scale
@@ -111,6 +119,7 @@ runs:
         INPUT_PORTS: ${{ inputs.ports }}
         INPUT_STORAGE_MOUNTS: ${{ inputs.storage-mounts }}
         INPUT_NGINX_PROPERTIES: ${{ inputs.nginx-properties }}
+        INPUT_DOCKER_OPTIONS: ${{ inputs.docker-options }}
 
     - name: Update Procfile release command
       if: inputs.action == 'deploy' && inputs.release-command != ''
